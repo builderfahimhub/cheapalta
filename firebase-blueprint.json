@@ -1,0 +1,93 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "App user profile",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "role": { "type": "string", "enum": ["user", "admin"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "WishlistItem": {
+      "title": "Wishlist Item",
+      "description": "A product saved by a user",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Owner UID" },
+        "productName": { "type": "string" },
+        "price": { "type": "string" },
+        "link": { "type": "string" },
+        "platform": { "type": "string" },
+        "addedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "productName", "link"]
+    },
+    "Review": {
+      "title": "Product Review",
+      "description": "User review for an alternative",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "userName": { "type": "string" },
+        "userPhoto": { "type": "string" },
+        "productName": { "type": "string" },
+        "rating": { "type": "number" },
+        "comment": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "productName", "rating", "comment"]
+    },
+    "Stats": {
+      "title": "App Statistics",
+      "description": "Global stats like visitor counts",
+      "type": "object",
+      "properties": {
+        "visitors": { "type": "number" },
+        "totalEarnings": { "type": "number" },
+        "lastUpdated": { "type": "string", "format": "date-time" }
+      }
+    },
+    "Withdrawal": {
+      "title": "Withdrawal Request",
+      "description": "Admin withdrawal requests",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "amount": { "type": "number" },
+        "method": { "type": "string", "enum": ["crypto", "bank"] },
+        "details": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "completed", "rejected"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "amount", "method", "details", "status"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles"
+    },
+    "/wishlists/{wishlistId}": {
+      "schema": "WishlistItem",
+      "description": "User wishlists"
+    },
+    "/reviews/{reviewId}": {
+      "schema": "Review",
+      "description": "Product reviews"
+    },
+    "/stats/{statId}": {
+      "schema": "Stats",
+      "description": "Global statistics"
+    },
+    "/withdrawals/{withdrawalId}": {
+      "schema": "Withdrawal",
+      "description": "Admin withdrawal requests"
+    }
+  }
+}

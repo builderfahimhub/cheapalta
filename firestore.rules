@@ -1,0 +1,135 @@
+// ===============================================================
+// Assumed Data Model
+// ===============================================================
+//
+// Collection: users
+// Document ID: {userId}
+// Fields:
+//   - uid: string (required, immutable)
+//   - email: string (required, immutable)
+//   - displayName: string (optional)
+//   - photoURL: string (optional)
+//   - role: string (required, enum: ['user', 'admin'])
+//   - createdAt: timestamp (required, immutable)
+//
+// Collection: wishlists
+// Document ID: {wishlistId}
+// Fields:
+//   - uid: string (required, immutable) - Owner UID
+//   - productName: string (required)
+//   - price: string (optional)
+//   - link: string (required)
+//   - platform: string (optional)
+//   - addedAt: timestamp (required, immutable)
+//
+// Collection: reviews
+// Document ID: {reviewId}
+// Fields:
+//   - uid: string (required, immutable)
+//   - userName: string (required)
+//   - userPhoto: string (optional)
+//   - productName: string (required)
+//   - rating: number (required, 1-5)
+//   - comment: string (required, max 1000 chars)
+//   - createdAt: timestamp (required, immutable)
+//
+// ===============================================================
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.uid;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+          (request.auth.token.email == "ahfahimsylhet@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidUser(data) {
+      return hasOnlyAllowedFields(['uid', 'email', 'displayName', 'photoURL', 'role', 'createdAt']) &&
+             data.uid == request.auth.uid &&
+             isValidEmail(data.email) &&
+             data.role in ['user', 'admin'] &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidWishlist(data) {
+      return hasOnlyAllowedFields(['uid', 'productName', 'price', 'link', 'platform', 'addedAt']) &&
+             data.uid == request.auth.uid &&
+             data.productName is string && data.productName.size() > 0 && data.productName.size() < 200 &&
+             data.link is string && data.link.size() > 0 &&
+             data.addedAt is timestamp;
+    }
+
+    function isValidReview(data) {
+      return hasOnlyAllowedFields(['uid', 'userName', 'userPhoto', 'productName', 'rating', 'comment', 'createdAt']) &&
+             data.uid == request.auth.uid &&
+             data.userName is string && data.userName.size() > 0 &&
+             data.productName is string &&
+             data.rating is number && data.rating >= 1 && data.rating <= 5 &&
+             data.comment is string && data.comment.size() > 0 && data.comment.size() <= 1000 &&
+             data.createdAt is timestamp;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isAuthenticated() && isValidUser(request.resource.data) && (request.resource.data.role == 'user' || isAdmin());
+      allow update: if isAuthenticated() && isValidUser(request.resource.data) && (isOwner(userId) && request.resource.data.role == resource.data.role || isAdmin());
+    }
+
+    match /wishlists/{wishlistId} {
+      allow read: if isDocOwner() || isAdmin();
+      allow create: if isAuthenticated() && isValidWishlist(request.resource.data);
+      allow update: if isAuthenticated() && isDocOwner() && isValidWishlist(request.resource.data);
+      allow delete: if isAuthenticated() && (isDocOwner() || isAdmin());
+    }
+
+    match /reviews/{reviewId} {
+      allow read: if true; // Reviews are public
+      allow create: if isAuthenticated() && isValidReview(request.resource.data);
+      allow update: if isAuthenticated() && isDocOwner() && isValidReview(request.resource.data);
+      allow delete: if isAuthenticated() && (isDocOwner() || isAdmin());
+    }
+
+    match /stats/{statId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /withdrawals/{withdrawalId} {
+      allow read, write: if isAdmin();
+    }
+  }
+}
