@@ -8,7 +8,7 @@ import { doc, getDoc, setDoc, updateDoc, increment } from "firebase/firestore";
 import * as React from "react";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import AdminQuickAccess from "@/components/AdminQuickAccess";
